@@ -6,5 +6,7 @@
 
 
 int main() {
+  ThreadPool* threadPool;
+  createThreadPool(threadPool, 10, 20);
   return 0;
 };
