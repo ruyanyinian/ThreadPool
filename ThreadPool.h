@@ -31,6 +31,7 @@ struct ThreadPool {
 
   // 互斥锁
   pthread_mutex_t threadPoolMutex;
+  pthread_cond_t  workingCond;
 };
 
 
@@ -38,6 +39,6 @@ typedef struct ThreadPool ThreadPool;
 
 void createThreadPool(ThreadPool *threadPool, int maxThreads, int minThreads); // threadPool的初始化
 void destroyThreadPool(ThreadPool *threadPool);
-void threadPoolAdd();
+void threadPoolAdd(ThreadPool *threadPool, void *(*taskFunc)(void *), void *arg);
 
 #endif //THREADPOOL_THREADPOOL_H

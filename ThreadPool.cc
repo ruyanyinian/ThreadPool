@@ -42,6 +42,7 @@
 // -----------------------------------------------BUG1写法展示----------------------------------------------------- //
 
 void *worker(void *arg) {
+  // 这里是不是得加上一个条件变量?
   ThreadPool *threadPool = (ThreadPool *)arg;
 
 
@@ -100,6 +101,9 @@ void destroyThreadPool(ThreadPool *threadPool) {
 }
 
 void threadPoolAdd(ThreadPool *threadPool, void *(*taskFunc)(void *), void *arg) {
+  // 主要是任务的添加
+  threadPool->taskQ[0].func = taskFunc;
+  threadPool->taskQ[0].arg = arg;
 
 }
 
