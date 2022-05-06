@@ -51,34 +51,11 @@ void *worker(void *arg) {
   return NULL;
 }
 
-// ----------------------------------------------BUG2写法展示----------------------------------------------------- //
+// ----------------------------------------------写法2不太规范的写法展示----------------------------------------------------- //
 // TODO: 这里也写错了, createThreadPool应该是返回的是初始化好的线程池, 我们这里以不应该传递是一个threadpool的.
 // 就比如我们想要类比构造函数, 构造函数虽然第一个参数是一个this指针, 然后这里传递是threadpool没有错, 但是在这里如果这样写的话是错误的
 // 因为我们在外部进行ThreadPool *threadPool的话, 默认是NULL,
-void createThreadPool(ThreadPool *threadPool, int maxThreads, int minThreads) {
-  threadPool->queueFront = 0;
-  threadPool->queueCapacity = maxThreads;
-
-  // 假设任务队列的和最大的线程数量是有关的, 也就是任务数量不可以超过最大的线程数量
-  threadPool->taskQ = (Task *) malloc(sizeof(Task) * maxThreads);
-  threadPool->workingThreadIDs = (pthread_t *) malloc(sizeof(pthread_t) * maxThreads);
-  for (int i = 0; i < maxThreads; ++i) {
-    /**
-     * 一开始我在想为什么这里不是直接调用任务函数, 而是传递是以worker函数, 不仅仅自己的需求中分析的那样我们需要工作线程
-     * 更是因为我们这里需要的是一个延迟的调用, 这里的worker更像是对真正线程函数的封装.
-     * */
-    pthread_create(&threadPool->workingThreadIDs[i], NULL, worker, threadPool); // TODO:因为这里threadid传入的是一个地址, 所以用不着初始化?
-    sleep(3);
-  }
-}
-// ----------------------------------------------BUG2写法展示------------------------------------------------------ //
-
-
-// ----------------------------------------------正确的写法------------------------------------------------------- //
-//void createThreadPool(int maxThreads, int minThreads) {
-//  // 在内部进行初始化
-//  // 首先我们对threadPool进行初始化:
-//
+//void createThreadPool(ThreadPool *threadPool, int maxThreads, int minThreads) {
 //  threadPool->queueFront = 0;
 //  threadPool->queueCapacity = maxThreads;
 //
@@ -90,9 +67,33 @@ void createThreadPool(ThreadPool *threadPool, int maxThreads, int minThreads) {
 //     * 一开始我在想为什么这里不是直接调用任务函数, 而是传递是以worker函数, 不仅仅自己的需求中分析的那样我们需要工作线程
 //     * 更是因为我们这里需要的是一个延迟的调用, 这里的worker更像是对真正线程函数的封装.
 //     * */
-//    pthread_create(&threadPool->workingThreadIDs[i], NULL, worker, threadPool);
+//    pthread_create(&threadPool->workingThreadIDs[i], NULL, worker, threadPool); // TODO:因为这里threadid传入的是一个地址, 所以用不着初始化?
+//    sleep(3);
 //  }
 //}
+// ----------------------------------------------写法2不太规范的写法展示------------------------------------------------------ //
+
+
+// ----------------------------------------------正确的写法------------------------------------------------------- //
+ThreadPool *createThreadPool(int maxThreads, int minThreads) {
+  // 在内部进行初始化
+  // 首先我们对threadPool进行初始化:
+  ThreadPool *threadPool = (ThreadPool *) malloc(sizeof(ThreadPool));
+  threadPool->queueFront = 0;
+  threadPool->queueCapacity = maxThreads;
+
+  // 假设任务队列的和最大的线程数量是有关的, 也就是任务数量不可以超过最大的线程数量
+  threadPool->taskQ = (Task *) malloc(sizeof(Task) * maxThreads);
+  threadPool->workingThreadIDs = (pthread_t *) malloc(sizeof(pthread_t) * maxThreads);
+  for (int i = 0; i < maxThreads; ++i) {
+    /**
+     * 一开始我在想为什么这里不是直接调用任务函数, 而是传递是以worker函数, 不仅仅自己的需求中分析的那样我们需要工作线程
+     * 更是因为我们这里需要的是一个延迟的调用, 这里的worker更像是对真正线程函数的封装.
+     * */
+    pthread_create(&threadPool->workingThreadIDs[i], NULL, worker, threadPool);
+  }
+  return threadPool;
+}
 // ----------------------------------------------正确的写法---------------------------------------------------------- //
 
 
