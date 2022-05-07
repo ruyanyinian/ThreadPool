@@ -43,19 +43,21 @@
 typedef struct Task {
   void *(*func)(void*);
   void *arg;
-}Task;
+} Task;
 
+// todo 把任务队列从threadpool给拆分出来
 struct ThreadPool {
   // threadPool维护一个任务队列
   Task *taskQ; // 任务队列
   int queueFront; // 队首
   int queueRear; // 队尾
-  int queueSize;
+  int queueSize; // 任务队列的数量
   int queueCapacity;
 
   // threadPool相关的线程数量
   int maxThreads;
   int minThreads;
+  int busyNum;
   // 线程相关
   pthread_t *workingThreadIDs, managerThreadID;
 
@@ -68,8 +70,10 @@ struct ThreadPool {
 void *worker(void *arg) {
   // 这里是不是得加上一个条件变量?
   ThreadPool *threadPool = (ThreadPool*)arg;
-//  pthread_mutex_lock(&threadPool->threadPoolMutex);
-  pthread_cond_wait(&threadPool->workingCond, &threadPool->threadPoolMutex);
+  pthread_mutex_lock(&threadPool->threadPoolMutex); // 只有一个线程通过, 并且取值
+  if (threadPool->queueSize == 0) {
+    pthread_cond_wait(&threadPool->workingCond, &threadPool->threadPoolMutex);
+  }
 
   threadPool->taskQ[0].func(arg); // 真正的函数执行在这里. 由于这里的func没有初始化所以报错。
   printf("the thread id is: %ld\n", pthread_self());
