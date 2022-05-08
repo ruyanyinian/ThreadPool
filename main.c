@@ -13,17 +13,6 @@ void *print(void *num) {
   return NULL;
 }
 
-
-int *haha(int *num) {
-  printf("the num is : %d\n", *num);
-  return num;
-}
-
-void callback(void *(* func1)(void *), void *arg) {
-  func1(arg);
-}
-
-
 int main() {
   // 这里错误, 我们没有给threadPool进行初始化, 也就是没有进行给threadPool一个有效的地址, 所以默认是NULL, 那么如果NULL传递进去的话threadPool->属性初始化就是错误的
   // TODO(qinyu) 没有给threadPool初始化, 默认是NULL
@@ -35,12 +24,5 @@ int main() {
 //    threadPoolAdd(threadPool, print, &num);
 //  }
 //  printf("the main thread id : %ld\n", pthread_self());
-  TaskQueue *taskQueue = createTaskQueue();
-  int ans = enQueue(taskQueue, print);
-  ThreadFunc element = getFront(taskQueue, 0);
-  int num = 10;
-  element(&num);
-  queueDestroy(taskQueue);
-
   return 0;
 }
