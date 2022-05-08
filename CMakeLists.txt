@@ -3,6 +3,6 @@ project(threadpool)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c11 -pthread")
 add_executable(${PROJECT_NAME}
         ThreadPool.c
-        main.c)
+        main.c TaskQueue.c TaskQueue.h)
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
 

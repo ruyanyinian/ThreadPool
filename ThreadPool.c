@@ -45,7 +45,7 @@ typedef struct Task {
   void *arg;
 } Task;
 
-// todo 把任务队列从threadpool给拆分出来
+// TODO 把任务队列从threadpool给拆分出来
 struct ThreadPool {
   // threadPool维护一个任务队列
   Task *taskQ; // 任务队列
