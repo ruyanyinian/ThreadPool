@@ -6,11 +6,9 @@
 
 typedef void *(*ThreadFunc)(void *); // 这里定义一个函数指针类型
 
-// QUESTION: 我们想把结构体的部分信息暴漏出去, 比如这里的data, 因为我们想在外部进行访问,怎么办?
-// 方法: 我们可以写一个函数, 然后返回这个成员变量就可以了.
 struct TaskQueue {
-  ThreadFunc *data; // NOTE: 注意这里应该加上*, 然后data是一个二级指针
-  void *args; // NOTE: 注意这里的args也是应该在堆上开辟内存. 因为多个任务函数, 对应多个任务参数.
+  ThreadFunc *data;
+  void *args;
   int size;
   int front;
   int rear; // rear怎么确定
