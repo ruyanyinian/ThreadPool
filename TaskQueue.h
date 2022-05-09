@@ -23,7 +23,7 @@ ThreadFunc getFront(TaskQueue *taskQueue);
 void setArgs(TaskQueue *taskQueue, void *arg);
 void *getArgs(TaskQueue *taskQueue);
 
-void monitor(); // TODO: 完成manager线程检测working线程的函数
+ // TODO: 完成manager线程检测working线程的函数
 void destroyTaskQueue(TaskQueue *taskQueue);
 
 #endif //THREADPOOL_TASKQUEUE_H

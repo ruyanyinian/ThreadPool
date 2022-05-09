@@ -5,23 +5,35 @@
 #include "ThreadPool.h"
 #include "TaskQueue.h"
 
+
 struct ThreadPool {
   // threadPool维护一个任务队列
   TaskQueue *taskQueue;
 
   // threadPool相关的线程数量
+  int shutdown;
   int maxThreads;
   int minThreads;
   int busyNum;
+  int livingNum;
+
+
   // 线程相关
   pthread_t *workingThreadIDs, managerThreadID;
 
   // 互斥锁
   pthread_mutex_t threadPoolMutex;
   pthread_cond_t  workingCond;
+
 };
 
-
+/**
+ * 工作的线程（任务队列任务的消费者）,N个
+ * 1.线程池中维护了一定数量的工作线程,他们的作用是是不停的读任务队列,从里边取出任务并处理
+ * 2.工作的线程相当于是任务队列的消费者角色。
+ * 3.如果任务队列为空,工作的线程将会被阻塞 (使用条件变量 / 信号量阻塞)
+ * 4.如果阻塞之后有了新的任务,由生产者将阻塞解除,工作线程开始工作
+ * */
 void *worker(void *arg) {
   // 这里是不是得加上一个条件变量?
   ThreadPool *threadPool = (ThreadPool*)arg;
@@ -36,6 +48,22 @@ void *worker(void *arg) {
   ThreadFunc callback = getFront(taskQueue);
   callback(getArgs(taskQueue));
   printf("the thread id is: %ld\n", pthread_self());
+  return NULL;
+}
+
+/**
+ * 管理者线程函数
+ * 1.它的任务是周期性的对任务队列中的任务数量以及处于忙状态的工作线程个数进行检测
+ * 2.当任务过多的时候,可以适当的创建一些新的工作线程
+ * 3.当任务过少的时候,可以适当的销毁一些工作的线程
+ * */
+void *monitor(void *arg) {
+  ThreadPool *threadPool = (ThreadPool*)arg;
+
+  while (!threadPool->shutdown) {
+
+  }
+
   return NULL;
 }
 
@@ -80,7 +108,7 @@ ThreadPool *createThreadPool(int maxThreads, int minThreads) {
      * */
     pthread_create(&threadPool->workingThreadIDs[i], NULL, worker, threadPool);
   }
-  pthread_create(&threadPool->managerThreadID, NULL, )
+  pthread_create(&threadPool->managerThreadID, NULL, monitor, threadPool);
   return threadPool;
 }
 // ----------------------------------------------正确的写法---------------------------------------------------------- //

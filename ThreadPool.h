@@ -16,5 +16,4 @@ typedef struct ThreadPool ThreadPool;
 ThreadPool *createThreadPool(int maxThreads, int minThreads); // threadPool的初始化
 void destroyThreadPool(ThreadPool *threadPool);
 void threadPoolAdd(ThreadPool *threadPool, void *(*taskFunc)(void *), void *arg);
-
 #endif //THREADPOOL_THREADPOOL_H
