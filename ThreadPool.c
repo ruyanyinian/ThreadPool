@@ -88,10 +88,10 @@ ThreadPool *createThreadPool(int maxThreads, int minThreads) {
   // 在内部进行初始化
   // 首先我们对threadPool进行初始化:
   ThreadPool *threadPool = (ThreadPool *) malloc(sizeof(ThreadPool));
-  TaskQueue *taskQueue = createTaskQueue(maxThreads);
-
+//  TaskQueue *taskQueue = createTaskQueue(maxThreads);
+  threadPool->taskQueue = createTaskQueue(maxThreads);
   threadPool->tid = (pthread_t *) malloc(sizeof(pthread_t) * maxThreads);
-
+  threadPool->maxThreads = maxThreads;
   pthread_mutex_init(&threadPool->threadPoolMutex, NULL);
   pthread_cond_init(&threadPool->workingCond, NULL);
 
@@ -101,6 +101,7 @@ ThreadPool *createThreadPool(int maxThreads, int minThreads) {
      * 更是因为我们这里需要的是一个延迟的调用, 这里的worker更像是对真正线程函数的封装.
      * */
     pthread_create(&threadPool->tid[i], NULL, worker, threadPool);
+//    pthread_join(threadPool->tid[i], NULL);
   }
 //  pthread_create(&threadPool->managerThreadID, NULL, monitor, threadPool);
   return threadPool;
@@ -109,10 +110,13 @@ ThreadPool *createThreadPool(int maxThreads, int minThreads) {
 
 
 void destroyThreadPool(ThreadPool *threadPool) {
+  for (int i = 0; i < threadPool->maxThreads; i++) {
+    pthread_join(threadPool->tid[i], NULL);
+  }
+  destroyTaskQueue(threadPool->taskQueue);
+  free(threadPool->tid);
 
 }
-
-
 
 void threadPoolAdd(ThreadPool *threadPool, void *(*taskFunc)(void *), void *arg) {
   // 主要是任务的添加
@@ -121,7 +125,6 @@ void threadPoolAdd(ThreadPool *threadPool, void *(*taskFunc)(void *), void *arg)
   setArgs(taskQueue, arg); // 设置参数
   //在这里唤醒?
   pthread_cond_broadcast(&threadPool->workingCond);
-
 }
 
 

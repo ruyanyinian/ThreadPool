@@ -18,6 +18,6 @@ int main() {
     threadPoolAdd(threadPool, print, &num);
   }
 //  printf("the main thread id : %ld\n", pthread_self());
-
+  destroyThreadPool(threadPool);
   return 0;
 }
