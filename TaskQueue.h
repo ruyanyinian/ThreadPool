@@ -25,5 +25,4 @@ void *getArgs(TaskQueue *taskQueue);
 
  // TODO: 完成manager线程检测working线程的函数
 void destroyTaskQueue(TaskQueue *taskQueue);
-
 #endif //THREADPOOL_TASKQUEUE_H

@@ -6,9 +6,23 @@
 #include "TaskQueue.h"
 
 void *print(void *num) {
-  printf("the number is %d\n", *(int*)num);
+//  printf("the number is %d\n", *(int*)num);
+  printf("the thread id is %ld\n", pthread_self());
   return NULL;
 }
+
+typedef struct Person {
+  int id;
+  const char *name;
+}Person;
+
+Person *createPersonObj() {
+  Person *pPerson = (Person*) malloc(sizeof(Person));
+  pPerson->id = 10;
+  pPerson->name = "haha";
+  return pPerson;
+}
+
 
 int main() {
   // 这里错误, 我们没有给threadPool进行初始化, 也就是没有进行给threadPool一个有效的地址, 所以默认是NULL, 那么如果NULL传递进去的话threadPool->属性初始化就是错误的

@@ -10,20 +10,19 @@ struct ThreadPool {
   // threadPool维护一个任务队列
   TaskQueue *taskQueue;
 
-  // threadPool相关的线程数量
+  // threadPool相关的设定
   int shutdown;
   int maxThreads;
   int minThreads;
   int busyNum;
   int livingNum;
-
-
+  int killNum; // 要杀死的线程数量
   // 线程相关
-  pthread_t *tid, managerThreadID;
+  pthread_t *tid, mid;
 
   // 互斥锁
-  pthread_mutex_t threadPoolMutex, tidMutex;
-  pthread_cond_t  workingCond;
+  pthread_mutex_t threadPoolMutex, workingIdMutex;
+  pthread_cond_t  isFull, isEmpty;
 
 };
 
@@ -38,19 +37,15 @@ void *worker(void *arg) {
   // 这里是不是得加上一个条件变量?
   ThreadPool *threadPool = (ThreadPool*)arg;
   TaskQueue *taskQueue = threadPool->taskQueue;
-
   pthread_mutex_lock(&threadPool->threadPoolMutex); // 只有一个线程通过, 并且取值
   if (getSize(taskQueue) == 0) {
-    pthread_cond_wait(&threadPool->workingCond, &threadPool->threadPoolMutex);
+    pthread_cond_wait(&threadPool->isEmpty, &threadPool->threadPoolMutex);
   }
-
   // 真正的函数执行在这里
   ThreadFunc callback = getFront(taskQueue);
   pthread_mutex_unlock(&threadPool->threadPoolMutex);
-
   // 这里只是读取操作, 这里多个线程同时执行任务函数.
   callback(getArgs(taskQueue));
-
   printf("the thread id is: %ld\n", pthread_self());
   return NULL;
 }
@@ -66,7 +61,9 @@ void *monitor(void *arg) {
 
   while (!threadPool->shutdown) {
     sleep(3); // 每3s监控一次
-    // 添加线程
+    // 取出线程池中任务的数量和当前线程的数量
+
+
     if (threadPool->busyNum < getSize(threadPool->taskQueue)) {
       // 创建线程, 创建多少个线程呢?
       // 作者这里的做法是一次添加两个
@@ -88,12 +85,27 @@ ThreadPool *createThreadPool(int maxThreads, int minThreads) {
   // 在内部进行初始化
   // 首先我们对threadPool进行初始化:
   ThreadPool *threadPool = (ThreadPool *) malloc(sizeof(ThreadPool));
-//  TaskQueue *taskQueue = createTaskQueue(maxThreads);
   threadPool->taskQueue = createTaskQueue(maxThreads);
   threadPool->tid = (pthread_t *) malloc(sizeof(pthread_t) * maxThreads);
+  if (threadPool->tid == NULL) {
+    printf("malloc thread id failed");
+    return NULL;
+  }
+  memset(threadPool->tid, 0, sizeof(pthread_t) * maxThreads);
+
   threadPool->maxThreads = maxThreads;
-  pthread_mutex_init(&threadPool->threadPoolMutex, NULL);
-  pthread_cond_init(&threadPool->workingCond, NULL);
+  threadPool->minThreads = minThreads;
+  threadPool->shutdown = 0;
+
+  // 这里既进行了初始化, 也增加了判断.
+  if (pthread_mutex_init(&threadPool->threadPoolMutex, NULL) != 0 ||
+      pthread_mutex_init(&threadPool->workingIdMutex, NULL) != 0 ||
+      pthread_cond_init(&threadPool->isFull, NULL) != 0 ||
+      pthread_cond_init(&threadPool->isEmpty, NULL) != 0) {
+
+    printf("the mutex or condition init failed \n");
+  }
+
 
   for (int i = 0; i < maxThreads; ++i) {
     /**
@@ -101,9 +113,8 @@ ThreadPool *createThreadPool(int maxThreads, int minThreads) {
      * 更是因为我们这里需要的是一个延迟的调用, 这里的worker更像是对真正线程函数的封装.
      * */
     pthread_create(&threadPool->tid[i], NULL, worker, threadPool);
-//    pthread_join(threadPool->tid[i], NULL);
   }
-//  pthread_create(&threadPool->managerThreadID, NULL, monitor, threadPool);
+  pthread_create(&threadPool->mid, NULL, monitor, threadPool);
   return threadPool;
 }
 // ----------------------------------------------正确的写法---------------------------------------------------------- //
@@ -124,7 +135,19 @@ void threadPoolAdd(ThreadPool *threadPool, void *(*taskFunc)(void *), void *arg)
   enQueue(taskQueue, taskFunc); // 任务入队
   setArgs(taskQueue, arg); // 设置参数
   //在这里唤醒?
-  pthread_cond_broadcast(&threadPool->workingCond);
+  pthread_cond_signal(&threadPool->isEmpty);
 }
 
+void killThreads(ThreadPool *threadPool) {
+  // 一次杀死一个线程?
+  pthread_t tid = pthread_self();
+  for (int i = 0; i < threadPool->maxThreads; ++i) {
+    if (threadPool->tid[i] == tid) {
+      threadPool->tid[i] = 0;
+      printf("kill the thread, which id is %ld", tid);
+      break;
+    }
+  }
+  pthread_exit(NULL);
+}
 
