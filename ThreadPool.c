@@ -64,16 +64,22 @@ void *worker(void *arg) {
     ThreadFunc callback = deQueue(taskQueue);
     pthread_cond_signal(&threadPool->isFull);
     pthread_mutex_unlock(&threadPool->threadPoolMutex);
+
     // 多个线程在执行
     printf("the thread id %ld is working\n", pthread_self());
 
     // 更新正在工作的线程数量(+1)
     pthread_mutex_lock(&threadPool->workingIdMutex);
     threadPool->workingNum++;
+    int *num = (int*)getArgs(taskQueue);
     pthread_mutex_unlock(&threadPool->workingIdMutex);
 
     //执行任务函数
-    callback(getArgs(taskQueue));
+    printf("the thread %ld getting here\n", pthread_self());
+
+//    printf("the args number is %d\n", *(int*)getArgs(taskQueue));
+
+    callback(num); // NOTE: 这正的执行回调函数的地方.
 
     //任务执行完毕之后, 工作线程应该更新(-1)
     pthread_mutex_lock(&threadPool->workingIdMutex);
@@ -131,17 +137,17 @@ ThreadPool *createThreadPool(int maxThreads, int minThreads) {
   // 在内部进行初始化
   // 首先我们对threadPool进行初始化:
   ThreadPool *threadPool = (ThreadPool *) malloc(sizeof(ThreadPool));
-  threadPool->taskQueue = createTaskQueue(maxThreads);
+  threadPool->taskQueue = createTaskQueue(100); // 先把这个capacity写死
   threadPool->tid = (pthread_t *) malloc(sizeof(pthread_t) * maxThreads);
   if (threadPool->tid == NULL) {
-    printf("malloc thread id failed");
+    printf("malloc thread id failed\n");
     return NULL;
   }
   memset(threadPool->tid, 0, sizeof(pthread_t) * maxThreads);
 
   threadPool->maxThreads = maxThreads;
   threadPool->minThreads = minThreads;
-  threadPool->shutdown = minThreads;
+  threadPool->shutdown = 0;
   threadPool->workingNum = 0;
   threadPool->livingNum = minThreads; // 最少存活的个数和min threads相等
   threadPool->killNums = 0; // 要杀死的线程数.
@@ -204,7 +210,8 @@ void threadPoolAdd(ThreadPool *threadPool, void *(*taskFunc)(void *), void *arg)
   //QUESTION: 为什么这里使用while循环, 而不是用if来判断
   //当主线程进入while这个代码块的时候, 说明任务队列已经满了, 然后主线程被阻塞
   //这里我们使用while而不使用if的原因是, 当主线程被唤醒的时候, 再次可以一直经过判断, 直到任务被取出的时候, 我们就可以跳出这个判断
-  while (getSize(threadPool->taskQueue) == CAPACITY && !threadPool->shutdown) {
+  while (getSize(threadPool->taskQueue) == getCapacity(threadPool->taskQueue) &&
+      !threadPool->shutdown) {
     // 阻塞生产者线程.
     pthread_cond_wait(&threadPool->isFull, &threadPool->threadPoolMutex);
   }
@@ -229,7 +236,7 @@ void killThreads(ThreadPool *threadPool) {
   for (int i = 0; i < threadPool->maxThreads; ++i) {
     if (threadPool->tid[i] == tid) {
       threadPool->tid[i] = 0;
-      printf("kill the thread, which id is %ld", tid);
+      printf("kill the thread, which id is %ld\n", tid);
       break;
     }
   }
