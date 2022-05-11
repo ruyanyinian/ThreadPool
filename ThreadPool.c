@@ -11,7 +11,7 @@ struct ThreadPool {
   TaskQueue *taskQueue;
 
   // threadPool相关的设定
-  int shutdown; // 线程池关闭
+  int shutdown; // 线程池关闭, 0:关闭, 1:打开
   int maxThreads;
   int minThreads;
   int workingNum; // 正在工作的线程
@@ -153,12 +153,33 @@ ThreadPool *createThreadPool(int maxThreads, int minThreads) {
 
 
 void destroyThreadPool(ThreadPool *threadPool) {
+  if (threadPool == NULL) {
+    return;
+  }
+  // 关闭线程池
+  threadPool->shutdown = 1;
+
+  // 阻塞回收管理者线程
+  pthread_join(threadPool->mid, NULL);
+  // 唤醒阻塞的消费者线程. NOTE: 这里为什么会唤醒消费者线程? 是不是确保存活的线程可以唤醒, 然后去自杀
+  for (int i = 0; i < threadPool->livingNum; ++i) {
+    pthread_cond_signal(&threadPool->isEmpty);
+  }
   for (int i = 0; i < threadPool->maxThreads; i++) {
     pthread_join(threadPool->tid[i], NULL);
   }
-  destroyTaskQueue(threadPool->taskQueue);
-  free(threadPool->tid);
 
+  // 释放内存
+  if (threadPool->taskQueue) destroyTaskQueue(threadPool->taskQueue);
+  if (threadPool->tid) free(threadPool->tid);
+
+  pthread_mutex_destroy(&threadPool->threadPoolMutex);
+  pthread_mutex_destroy(&threadPool->workingIdMutex);
+
+  pthread_cond_destroy(&threadPool->isFull);
+  pthread_cond_destroy(&threadPool->isEmpty);
+  free(threadPool);
+  threadPool = NULL;
 }
 
 void threadPoolAdd(ThreadPool *threadPool, void *(*taskFunc)(void *), void *arg) {
