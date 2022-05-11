@@ -65,7 +65,7 @@ int enQueue(TaskQueue *taskQueue, ThreadFunc item) {
   return CORRECT;
 }
 
-int deQueue(TaskQueue *taskQueue) {
+ThreadFunc deQueue(TaskQueue *taskQueue) {
   if (isEmpty(taskQueue)) {
     printf("the queue is empty, cannot dequeue");
     return ERROR;
@@ -74,11 +74,7 @@ int deQueue(TaskQueue *taskQueue) {
   taskQueue->front %= CAPACITY;
   taskQueue->data[taskQueue->front] = 0;
   taskQueue->size--;
-  return CORRECT;
-}
-
-ThreadFunc getFront(TaskQueue *taskQueue) {
-  return taskQueue->data[taskQueue->front];
+  return taskQueue->data[taskQueue->front];;
 }
 
 void destroyTaskQueue(TaskQueue *taskQueue) {

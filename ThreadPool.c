@@ -3,7 +3,7 @@
 //
 
 #include "ThreadPool.h"
-#include "TaskQueue.h"
+
 
 
 struct ThreadPool {
@@ -11,12 +11,12 @@ struct ThreadPool {
   TaskQueue *taskQueue;
 
   // threadPool相关的设定
-  int shutdown;
+  int shutdown; // 线程池关闭
   int maxThreads;
   int minThreads;
-  int busyNum;
-  int livingNum;
-  int killNum; // 要杀死的线程数量
+  int workingNum; // 正在工作的线程
+  int livingNum; // 存活的线程
+  int killNums; // 要杀死的线程数量
   // 线程相关
   pthread_t *tid, mid;
 
@@ -37,16 +37,49 @@ void *worker(void *arg) {
   // 这里是不是得加上一个条件变量?
   ThreadPool *threadPool = (ThreadPool*)arg;
   TaskQueue *taskQueue = threadPool->taskQueue;
-  pthread_mutex_lock(&threadPool->threadPoolMutex); // 只有一个线程通过, 并且取值
-  if (getSize(taskQueue) == 0) {
-    pthread_cond_wait(&threadPool->isEmpty, &threadPool->threadPoolMutex);
+
+  // 这里写成死循环, 也就是循环取任务.
+  while (1) { // NOTE:我们这里是一个死循环, 那么怎么跳出这个循环呢? 注意我们这里有shutdown, 当执行关闭线程池的时候, 会killthreads
+    // 只有一个线程通过, 取出任务, 并且执行
+    pthread_mutex_lock(&threadPool->threadPoolMutex);
+    while (getSize(taskQueue) == 0 && !threadPool->shutdown) { //QUESTION: 这里为什么使用while, 不使用if?
+      pthread_cond_wait(&threadPool->isEmpty, &threadPool->threadPoolMutex); // 如果队列是空的, 就进行阻塞.
+
+      if (threadPool->killNums > 0) {  // 如果要杀死线程数量大于0的话, 那就杀死线程.
+        threadPool->killNums--;
+        if (threadPool->livingNum > threadPool->minThreads) { // 线程最小的个数不能小于minThreads;
+          threadPool->livingNum--;
+          pthread_mutex_unlock(&threadPool->threadPoolMutex);
+          killThreads(threadPool);
+        }
+      }
+    }
+
+    if (threadPool->shutdown) {
+      pthread_mutex_unlock(&threadPool->threadPoolMutex);
+      killThreads(threadPool);
+    }
+
+    // 取出一个任务, 当我们取出一个任务的时候就可以唤醒生产者了
+    ThreadFunc callback = deQueue(taskQueue);
+    pthread_cond_signal(&threadPool->isFull);
+    pthread_mutex_unlock(&threadPool->threadPoolMutex);
+    // 多个线程在执行
+    printf("the thread id %ld is working\n", pthread_self());
+
+    // 更新正在工作的线程数量(+1)
+    pthread_mutex_lock(&threadPool->workingIdMutex);
+    threadPool->workingNum++;
+    pthread_mutex_unlock(&threadPool->workingIdMutex);
+
+    //执行任务函数
+    callback(getArgs(taskQueue));
+
+    //任务执行完毕之后, 工作线程应该更新(-1)
+    pthread_mutex_lock(&threadPool->workingIdMutex);
+    threadPool->workingNum--;
+    pthread_mutex_unlock(&threadPool->workingIdMutex);
   }
-  // 真正的函数执行在这里
-  ThreadFunc callback = getFront(taskQueue);
-  pthread_mutex_unlock(&threadPool->threadPoolMutex);
-  // 这里只是读取操作, 这里多个线程同时执行任务函数.
-  callback(getArgs(taskQueue));
-  printf("the thread id is: %ld\n", pthread_self());
   return NULL;
 }
 
@@ -63,11 +96,10 @@ void *monitor(void *arg) {
     sleep(3); // 每3s监控一次
     // 取出线程池中任务的数量和当前线程的数量
 
-
-    if (threadPool->busyNum < getSize(threadPool->taskQueue)) {
+    if (threadPool->workingNum < getSize(threadPool->taskQueue)) {
       // 创建线程, 创建多少个线程呢?
       // 作者这里的做法是一次添加两个
-      int threadDeficit = getSize(threadPool->taskQueue) - threadPool->busyNum;
+      int threadDeficit = getSize(threadPool->taskQueue) - threadPool->workingNum;
       for (int i = 0; i < threadDeficit; ++i) {
         // NOTE: 看看哪些线程id是没有被使用的
         if (threadPool->tid[i] == 0) {
@@ -80,7 +112,6 @@ void *monitor(void *arg) {
   return NULL;
 }
 
-// ----------------------------------------------正确的写法------------------------------------------------------- //
 ThreadPool *createThreadPool(int maxThreads, int minThreads) {
   // 在内部进行初始化
   // 首先我们对threadPool进行初始化:
@@ -95,9 +126,12 @@ ThreadPool *createThreadPool(int maxThreads, int minThreads) {
 
   threadPool->maxThreads = maxThreads;
   threadPool->minThreads = minThreads;
-  threadPool->shutdown = 0;
+  threadPool->shutdown = minThreads;
+  threadPool->workingNum = 0;
+  threadPool->livingNum = minThreads; // 最少存活的个数和min threads相等
+  threadPool->killNums = 0; // 要杀死的线程数.
 
-  // 这里既进行了初始化, 也增加了判断.
+  // NOTE: 这里既进行了初始化, 也增加了判断.
   if (pthread_mutex_init(&threadPool->threadPoolMutex, NULL) != 0 ||
       pthread_mutex_init(&threadPool->workingIdMutex, NULL) != 0 ||
       pthread_cond_init(&threadPool->isFull, NULL) != 0 ||
@@ -106,18 +140,16 @@ ThreadPool *createThreadPool(int maxThreads, int minThreads) {
     printf("the mutex or condition init failed \n");
   }
 
-
   for (int i = 0; i < maxThreads; ++i) {
     /**
      * 一开始我在想为什么这里不是直接调用任务函数, 而是传递是以worker函数, 不仅仅自己的需求中分析的那样我们需要工作线程
      * 更是因为我们这里需要的是一个延迟的调用, 这里的worker更像是对真正线程函数的封装.
      * */
-    pthread_create(&threadPool->tid[i], NULL, worker, threadPool);
+    pthread_create(&threadPool->tid[i], NULL, worker, threadPool); // 在这里我们直接启动了maxThreads的线程
   }
   pthread_create(&threadPool->mid, NULL, monitor, threadPool);
   return threadPool;
 }
-// ----------------------------------------------正确的写法---------------------------------------------------------- //
 
 
 void destroyThreadPool(ThreadPool *threadPool) {
@@ -130,16 +162,33 @@ void destroyThreadPool(ThreadPool *threadPool) {
 }
 
 void threadPoolAdd(ThreadPool *threadPool, void *(*taskFunc)(void *), void *arg) {
-  // 主要是任务的添加
+  // 主要是任务的添加, 给线程池添加任务的时候, 需要锁的保护
+  pthread_mutex_lock(&threadPool->threadPoolMutex);
+
+  //QUESTION: 为什么这里使用while循环, 而不是用if来判断
+  //当主线程进入while这个代码块的时候, 说明任务队列已经满了, 然后主线程被阻塞
+  //这里我们使用while而不使用if的原因是, 当主线程被唤醒的时候, 再次可以一直经过判断, 直到任务被取出的时候, 我们就可以跳出这个判断
+  while (getSize(threadPool->taskQueue) == CAPACITY && !threadPool->shutdown) {
+    // 阻塞生产者线程.
+    pthread_cond_wait(&threadPool->isFull, &threadPool->threadPoolMutex);
+  }
+
+  if (threadPool->shutdown) {
+    pthread_mutex_unlock(&threadPool->threadPoolMutex);
+    return;
+  }
+
+
   TaskQueue *taskQueue = threadPool->taskQueue;
   enQueue(taskQueue, taskFunc); // 任务入队
   setArgs(taskQueue, arg); // 设置参数
-  //在这里唤醒?
+  // 当队列中有任务的时候, 我们将线程唤醒.
   pthread_cond_signal(&threadPool->isEmpty);
+  pthread_mutex_unlock(&threadPool->threadPoolMutex);
 }
 
 void killThreads(ThreadPool *threadPool) {
-  // 一次杀死一个线程?
+  //NOTE: 一次杀死一个线程. 它的思路是: 当一个线程去调用这个函数的时候, 我们获取这个thread id, 然后循环遍历tid数组, 然后找到对应的id,对应等于0即可
   pthread_t tid = pthread_self();
   for (int i = 0; i < threadPool->maxThreads; ++i) {
     if (threadPool->tid[i] == tid) {

@@ -10,7 +10,7 @@
 #include <malloc.h>
 #include <string.h>
 #include <unistd.h>
-
+#include "TaskQueue.h"
 typedef struct ThreadPool ThreadPool;
 
 ThreadPool *createThreadPool(int maxThreads, int minThreads); // threadPool的初始化
