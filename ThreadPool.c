@@ -94,17 +94,32 @@ void *monitor(void *arg) {
 
   while (!threadPool->shutdown) {
     sleep(3); // 每3s监控一次
-    // 取出线程池中任务的数量和当前线程的数量
-
-    if (threadPool->workingNum < getSize(threadPool->taskQueue)) {
+    if (threadPool->livingNum < getSize(threadPool->taskQueue) &&
+        threadPool->livingNum < threadPool->maxThreads) {
       // 创建线程, 创建多少个线程呢?
       // 作者这里的做法是一次添加两个
-      int threadDeficit = getSize(threadPool->taskQueue) - threadPool->workingNum;
-      for (int i = 0; i < threadDeficit; ++i) {
-        // NOTE: 看看哪些线程id是没有被使用的
+      pthread_mutex_lock(&threadPool->threadPoolMutex);
+      int counter = 0;
+      for (int i = 0; i < threadPool->maxThreads &&
+          counter < 2 && threadPool->livingNum < threadPool->maxThreads; ++i) {
         if (threadPool->tid[i] == 0) {
           pthread_create(&threadPool->tid[i], NULL, worker, threadPool);
+          counter++;
+          threadPool->livingNum++; // 更新livingNum
         }
+      }
+      pthread_mutex_unlock(&threadPool->threadPoolMutex);
+    }
+    // 销毁线程 NOTE: 销毁线程还是不怎么理解.
+    if (threadPool->workingNum * 2 < threadPool->livingNum &&
+        threadPool->livingNum > threadPool->minThreads) {
+      pthread_mutex_lock(&threadPool->threadPoolMutex);
+      threadPool->killNums = 2;
+      pthread_mutex_unlock(&threadPool->threadPoolMutex);
+      // 让工作的线程自杀
+      for (int i = 0; i < threadPool->killNums; ++i)
+      {
+        pthread_cond_signal(&threadPool->isFull);
       }
     }
   }
