@@ -24,6 +24,20 @@ Task *deTaskQueue(Queue *queue) {
   return task;
 }
 
+// NOTE: 第三种写法可以不可以这样? 其实就是把task和Queue合到一起写了
+typedef struct TaskQueue {
+  ThreadFunc *func; // 这里使用malloc进行分配初始化
+  void *args; // 这里使用malloc进行分配初始化
+
+  int queueSize;
+  int rear;
+  int front;
+  int capacity;
+} TaskQueue;
+
+TaskQueue *initTaskQueue() {
+  TaskQueue *taskQueue = malloc()
+};
 //Queue *createTaskQueue() {
 //  TaskQueue *taskQueue = (TaskQueue*)malloc(sizeof(TaskQueue));
 //  if (!taskQueue) {
