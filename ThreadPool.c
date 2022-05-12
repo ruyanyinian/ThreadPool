@@ -60,7 +60,7 @@ void *worker(void *arg) {
       killThreads(threadPool);
     }
 
-    // 取出一个任务, 当我们取出一个任务的时候就可以唤醒生产者了
+    // 取出一个任务. 当我们取出一个任务的时候, 任务队列就不满了 这个时候就可以就可以唤醒生产者.
     ThreadFunc callback = deQueue(taskQueue);
     pthread_cond_signal(&threadPool->isFull);
     pthread_mutex_unlock(&threadPool->threadPoolMutex);
@@ -220,7 +220,6 @@ void threadPoolAdd(ThreadPool *threadPool, void *(*taskFunc)(void *), void *arg)
     pthread_mutex_unlock(&threadPool->threadPoolMutex);
     return;
   }
-
 
   TaskQueue *taskQueue = threadPool->taskQueue;
   enQueue(taskQueue, taskFunc); // 任务入队
