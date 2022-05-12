@@ -48,7 +48,7 @@ int isEmpty(Queue *queue) {
   return queue->size == 0;
 }
 
-int enQueue(Queue *queue, void **item) {
+int enQueue(Queue *queue, void *item) {
   if (isFull(queue)) {
     printf("the queue is full, add failed!");
     return ERROR;
