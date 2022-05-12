@@ -16,13 +16,13 @@ typedef void *(*ThreadFunc)(void *); // 在队列中存放的函数指针
 
 TaskQueue *createTaskQueue(int capacity);
 
-int enQueue(TaskQueue *taskQueue, ThreadFunc item); // 入队, 入队成功返回0, 入队失败返回的是不为0的错误码
+int enQueue(TaskQueue *taskQueue, ThreadFunc item, void *args); // 入队, 入队成功返回0, 入队失败返回的是不为0的错误码
 ThreadFunc deQueue(TaskQueue *taskQueue); // 出队, 出队成功返回0, 入队失败返回的是不为0的错误码
 int getSize(TaskQueue *taskQueue);
 int getCapacity(TaskQueue *taskQueue);
 //ThreadFunc getFront(TaskQueue *taskQueue);
 
-void setArgs(TaskQueue *taskQueue, void *arg);
+//void setArgs(TaskQueue *taskQueue, void *arg);
 void *getArgs(TaskQueue *taskQueue);
 
 void destroyTaskQueue(TaskQueue *taskQueue);
