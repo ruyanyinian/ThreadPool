@@ -3,6 +3,10 @@
 //
 
 #include "TaskQueue.h"
+// QUESTION: 我是不是应该把这个queue和task给拆开? 我们有两种写法:
+//  1.就是定义一个结构体让然后里面的的func和args各定义一个queue.
+//  2.就是定义一个task结构体, 然后声明func和arg两个变量. 然后task定义的变量在存放在queue中.
+//  3.就是像作者一样把queue和task写在一起. 下面就是第三种写法
 
 typedef void *(*ThreadFunc)(void *); // 这里定义一个函数指针类型
 
