@@ -6,9 +6,15 @@
 
 typedef void *(*ThreadFunc)(void *); // 这里定义一个函数指针类型
 
+struct Task {
+  ThreadFunc data;
+  void *args;
+};
+
 struct TaskQueue {
   ThreadFunc *data;
-  void *args;
+  void **args;
+  Task *returnTask;
   int size;
   int front;
   int rear;
@@ -23,6 +29,8 @@ TaskQueue *createTaskQueue(int capacity) {
     return NULL;
   }
   taskQueue->data = (ThreadFunc*) malloc(capacity * sizeof(ThreadFunc));
+  taskQueue->args = (void**) malloc(capacity * sizeof(void*));
+  taskQueue->returnTask = (Task*)malloc(sizeof(Task));
   if (!taskQueue->data) {
     printf("the storage is not enough!");
     return NULL;
@@ -53,31 +61,38 @@ int isEmpty(TaskQueue *taskQueue) {
   return taskQueue->size == 0;
 }
 
-int enQueue(TaskQueue *taskQueue, ThreadFunc item) {
+void enQueue(TaskQueue *taskQueue, ThreadFunc item, void *arg) {
   if (isFull(taskQueue)) {
     printf("the queue is full, add failed!");
-    return ERROR;
+    return;
   }
   taskQueue->rear++;
   taskQueue->data[taskQueue->rear] = item;
+  taskQueue->args[taskQueue->rear] = arg;
   // 这里主要是如果rear和capacity取余数, 如果rear小于capcity就是正常的
   // 如果等于capacity的话, 那么rear=0, 然后就又回到原点了, 所以肯定还是不要超过capacity
+
   taskQueue->rear %= taskQueue->capacity;
   taskQueue->size++;
-  return CORRECT;
 }
 
-ThreadFunc deQueue(TaskQueue *taskQueue) {
+Task *deQueue(TaskQueue *taskQueue) {
   if (isEmpty(taskQueue)) {
     printf("the queue is empty, cannot dequeue");
-    return ERROR;
+//    return ERROR;
   }
   taskQueue->front++;
   taskQueue->front %= taskQueue->capacity;
-//  taskQueue->data[taskQueue->front] = 0;
   taskQueue->size--;
-  return taskQueue->data[taskQueue->front];;
+//  Task *task; // QUESTION: 怎么同时返回两个值? 可能只能用struct结构体返回.
+//  task->data = (ThreadFunc*)taskQueue->data[taskQueue->front];
+//  task->args = taskQueue->args[taskQueue->front];
+  Task *task = taskQueue->returnTask;
+  task->data = (ThreadFunc)taskQueue->data[taskQueue->front];
+  task->args = taskQueue->args[taskQueue->front];
+  return task;
 }
+
 
 void destroyTaskQueue(TaskQueue *taskQueue) {
   if (taskQueue) {
@@ -98,14 +113,22 @@ void destroyTaskQueue(TaskQueue *taskQueue) {
   }
 }
 
-void setArgs(TaskQueue *taskQueue, void *args) {
-  taskQueue->args = args;
-}
-
-void *getArgs(TaskQueue *taskQueue) {
-  return taskQueue->args;
-}
+//void setArgs(TaskQueue *taskQueue, void *args) {
+//  taskQueue->args = args;
+//}
+//
+//void *getArgs(TaskQueue *taskQueue) {
+//  return taskQueue->args;
+//}
 
 int getCapacity(TaskQueue *taskQueue) {
   return taskQueue->capacity;
+}
+
+ThreadFunc getFunc(Task *task) {
+  return task->data;
+}
+
+void *getArgs(Task *task) {
+  return task->args;
 }
