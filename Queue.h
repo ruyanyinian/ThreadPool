@@ -15,7 +15,7 @@ typedef struct Queue Queue;
 
 Queue *createQueue(int capacity);
 
-int enQueue(Queue *queue, void *args); // 入队, 入队成功返回0, 入队失败返回的是不为0的错误码
+int enQueue(Queue *queue, void *item); // 入队, 入队成功返回0, 入队失败返回的是不为0的错误码
 void *deQueue(Queue *queue); // 出队, 出队成功返回0, 入队失败返回的是不为0的错误码
 int getSize(Queue *queue);
 int getCapacity(Queue *queue);

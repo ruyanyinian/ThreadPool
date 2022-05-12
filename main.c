@@ -13,19 +13,20 @@ void *print(void *num) {
 
 
 int main() {
-  TaskQueue *taskQueue = createTaskQueue(100);
-//  int *args = (int*)malloc(sizeof(int));
-  for (int i = 0; i < 10; i++) {
-    int *num = (int*) malloc(sizeof(int)); // NOTE: data是存的是不同的地址的. 所以我们需要注意
-    *num = i;
-    enTaskQueue(taskQueue, print, num);
-  }
-  for (int i = 0; i < 10; i++) {
 
-    ThreadFunc f = (ThreadFunc)deTaskFuncQueue(taskQueue);
-    f(deArgsQueue(taskQueue));
-//    int *ans = (int*)deArgsQueue(taskQueue);
-//    printf("the arg is %d\n", *ans);
-  }
-  return 0;
+//  TaskQueue *taskQueue = createTaskQueue(100);
+////  int *args = (int*)malloc(sizeof(int));
+//  for (int i = 0; i < 10; i++) {
+//    int *num = (int*) malloc(sizeof(int)); // NOTE: data是存的是不同的地址的. 所以我们需要注意
+//    *num = i;
+//    enTaskQueue(taskQueue, print, num);
+//  }
+//  for (int i = 0; i < 10; i++) {
+//
+//    ThreadFunc f = (ThreadFunc)deTaskFuncQueue(taskQueue);
+//    f(deArgsQueue(taskQueue));
+////    int *ans = (int*)deArgsQueue(taskQueue);
+////    printf("the arg is %d\n", *ans);
+//  }
+//  return 0;
 }

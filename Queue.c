@@ -28,9 +28,12 @@ Queue *createQueue(int capacity) {
 //    printf("the storage is not enough!");
 //    return NULL;
 //  }
+  if (!queue->data) {
+    printf("the storage is not enough!");
+    return NULL;
+  }
 
   queue->capacity = capacity;
-
   queue->front = -1;
   queue->rear = -1;
   queue->size = 0;
