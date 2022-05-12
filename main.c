@@ -16,7 +16,7 @@ int main() {
   TaskQueue *taskQueue = createTaskQueue(100);
 //  int *args = (int*)malloc(sizeof(int));
   for (int i = 0; i < 10; i++) {
-    int *num = (int*) malloc(sizeof(int)); // NOTE: data是存的是不同的地址的.
+    int *num = (int*) malloc(sizeof(int)); // NOTE: data是存的是不同的地址的. 所以我们需要注意
     *num = i;
     enTaskQueue(taskQueue, print, num);
   }
