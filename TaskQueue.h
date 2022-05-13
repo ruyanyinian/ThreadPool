@@ -14,18 +14,23 @@
 
 typedef struct TaskQueue TaskQueue;
 typedef void *(*ThreadFunc)(void *); // 在队列中存放的函数指针
-typedef struct Task Task;
+//typedef struct Task Task;
+
+typedef struct Task {
+  ThreadFunc func;
+  void *args;
+} Task;
 
 TaskQueue *createTaskQueue(int capacity);
 
-void enQueue(TaskQueue *taskQueue, ThreadFunc item, void *arg); // 入队, 入队成功返回0, 入队失败返回的是不为0的错误码
-Task *deQueue(TaskQueue *taskQueue); // 出队, 出队成功返回0, 入队失败返回的是不为0的错误码
+void enQueue(TaskQueue *taskQueue, Task item); // 入队, 入队成功返回0, 入队失败返回的是不为0的错误码
+Task deQueue(TaskQueue *taskQueue); // 出队, 出队成功返回0, 入队失败返回的是不为0的错误码
 int getSize(TaskQueue *taskQueue);
 int getCapacity(TaskQueue *taskQueue);
-//ThreadFunc getFront(TaskQueue *taskQueue);
+
 ThreadFunc getFunc(Task *task);
-void setArgs(TaskQueue *taskQueue, void *arg);
-void *getArgs(Task *task);
+//void setArgs(TaskQueue *taskQueue, void *arg);
+//void *getArgs(Task *task);
 
 void destroyTaskQueue(TaskQueue *taskQueue);
 #endif //THREADPOOL_TASKQUEUE_H

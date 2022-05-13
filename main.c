@@ -25,14 +25,18 @@ int main() {
   TaskQueue * taskQueue = createTaskQueue(10);
 
   for (int i = 0; i < 10; i++) {
-    int *num = (int*) malloc(sizeof(int));
+    int *num = (int*)malloc(sizeof(int));
     *num = i;
-    enQueue(taskQueue, print, num);
+    Task task;
+    task.func = print;
+    task.args = num;
+    enQueue(taskQueue, task);
   }
   for (int i = 0; i < 10; i++) {
-    Task *task = deQueue(taskQueue);
-    ThreadFunc f = getFunc(task);
-    f(getArgs(task));
+    Task task = deQueue(taskQueue);
+    task.func(task.args);
   }
+
+  destroyTaskQueue(taskQueue);
   return 0;
 }
