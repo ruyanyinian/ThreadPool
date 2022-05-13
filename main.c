@@ -25,7 +25,7 @@ int main() {
   TaskQueue * taskQueue = createTaskQueue(10);
 
   for (int i = 0; i < 10; i++) {
-    int *num = (int*)malloc(sizeof(int));
+    int *num = (int*)malloc(sizeof(int)); // MEMLEAK: 内存泄漏
     *num = i;
     Task task;
     task.func = print;
