@@ -23,13 +23,13 @@ int main() {
 ////  printf("the main thread id : %ld\n", pthread_self());
 //  destroyThreadPool(threadPool);
   TaskQueue * taskQueue = createTaskQueue(10);
-
+  int *num[10] = {};
   for (int i = 0; i < 10; i++) {
-    int *num = (int*)malloc(sizeof(int)); // MEMLEAK: 内存泄漏
-    *num = i;
+    num[i] = (int*)malloc(sizeof(int)); // MEM-LEAK: 内存泄漏
+    *num[i] = i;
     Task task;
     task.func = print;
-    task.args = num;
+    task.args = num[i];
     enQueue(taskQueue, task);
   }
   for (int i = 0; i < 10; i++) {
@@ -37,6 +37,11 @@ int main() {
     task.func(task.args);
   }
 
+  for (int i = 0; i < 10; i++) {
+    free(num[i]);
+  }
   destroyTaskQueue(taskQueue);
+
+
   return 0;
 }
