@@ -61,7 +61,8 @@ void *worker(void *arg) {
     }
 
     // 取出一个任务, 当我们取出一个任务的时候就可以唤醒生产者了
-    ThreadFunc callback = deQueue(taskQueue);
+    Task task = deQueue(taskQueue);
+
     pthread_cond_signal(&threadPool->isFull);
     pthread_mutex_unlock(&threadPool->threadPoolMutex);
 
@@ -71,7 +72,9 @@ void *worker(void *arg) {
     // 更新正在工作的线程数量(+1)
     pthread_mutex_lock(&threadPool->workingIdMutex);
     threadPool->workingNum++;
-    int *num = (int*)getArgs(taskQueue);
+
+//    // 取出
+//    int *num = (int*)getArgs(taskQueue);
     pthread_mutex_unlock(&threadPool->workingIdMutex);
 
     //执行任务函数
@@ -79,7 +82,7 @@ void *worker(void *arg) {
 
 //    printf("the args number is %d\n", *(int*)getArgs(taskQueue));
 
-    callback(num); // NOTE: 这正的执行回调函数的地方.
+    task.func(task.args); // NOTE: 这正的执行回调函数的地方.
 
     //任务执行完毕之后, 工作线程应该更新(-1)
     pthread_mutex_lock(&threadPool->workingIdMutex);
@@ -221,10 +224,12 @@ void threadPoolAdd(ThreadPool *threadPool, void *(*taskFunc)(void *), void *arg)
     return;
   }
 
-
+  // 添加任务
   TaskQueue *taskQueue = threadPool->taskQueue;
-  enQueue(taskQueue, taskFunc); // 任务入队
-  setArgs(taskQueue, arg); // 设置参数
+  Task task;
+  task.func = taskFunc;
+  task.args = arg;
+  enQueue(taskQueue, task);
   // 当队列中有任务的时候, 我们将线程唤醒.
   pthread_cond_signal(&threadPool->isEmpty);
   pthread_mutex_unlock(&threadPool->threadPoolMutex);

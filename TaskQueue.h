@@ -14,7 +14,6 @@
 
 typedef struct TaskQueue TaskQueue;
 typedef void *(*ThreadFunc)(void *); // 在队列中存放的函数指针
-//typedef struct Task Task;
 
 typedef struct Task {
   ThreadFunc func;
@@ -28,7 +27,7 @@ Task deQueue(TaskQueue *taskQueue); // 出队, 出队成功返回0, 入队失败
 int getSize(TaskQueue *taskQueue);
 int getCapacity(TaskQueue *taskQueue);
 
-ThreadFunc getFunc(Task *task);
+//ThreadFunc getFunc(Task *task);
 //void setArgs(TaskQueue *taskQueue, void *arg);
 //void *getArgs(Task *task);
 
