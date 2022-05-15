@@ -4,8 +4,6 @@
 
 #include "ThreadPool.h"
 
-
-
 struct ThreadPool {
   // threadPool维护一个任务队列
   TaskQueue *taskQueue;
