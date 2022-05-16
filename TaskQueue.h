@@ -7,38 +7,36 @@
 #include <queue>
 #include <stdio.h>
 #include <stdlib.h>
+#include <pthread.h>
 #define CAPACITY 100
 #define ERROR -99 // 一般来说我们定义一个
 #define CORRECT 0
 
-typedef void(*callback)(void*);
+typedef void(*Callback)(void*);
 using namespace std;
 
 struct Task {
 public:
   Task();
-  Task(callback func, void *arg);
+  Task(Callback func, void *arg);
   ~Task();
 
-private:
-  callback m_func;
+public:
+  Callback m_func;
   void *m_arg;
 };
 
-class TaskQueue {
+struct TaskQueue {
 public:
-  TaskQueue() {};
-  TaskQueue(int capacity);
-  TaskQueue(const TaskQueue &taskQueue);
-  TaskQueue(TaskQueue &&taskQueue);
+  TaskQueue();
   void enTaskQueue(Task &task);
-  void enTaskQueue()
+  void enTaskQueue(Callback func, void *arg);
   Task deTaskQueue();
   int getSize();
   int getCapacity();
   ~TaskQueue();
 private:
   std::queue<Task> taskQueue;
-  int capacity;
+  pthread_mutex_t taskQueueMutex; // 用来保护任务队列的锁
 };
 #endif //THREADPOOL_TASKQUEUE_H

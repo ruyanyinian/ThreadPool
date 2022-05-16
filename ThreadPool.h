@@ -6,7 +6,6 @@
 #define THREADPOOL_THREADPOOL_H
 
 #include <stdio.h>
-#include <pthread.h>
 #include <malloc.h>
 #include <string.h>
 #include <unistd.h>

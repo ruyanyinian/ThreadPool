@@ -10,7 +10,7 @@ Task::Task() {
   m_arg = nullptr;
 }
 
-Task::Task(callback func, void *arg) {
+Task::Task(Callback func, void *arg) {
   m_func = func;
   m_arg = arg;
 }
@@ -19,7 +19,40 @@ Task::~Task() {
 
 }
 
-TaskQueue::TaskQueue(int capacity) {
-    taskQueue = std::queue<Task, 10>(capacity)
+TaskQueue::TaskQueue() {
+  pthread_mutex_init(&taskQueueMutex, nullptr);
 
 }
+
+
+void TaskQueue::enTaskQueue(Task &task) {
+  pthread_mutex_lock(&taskQueueMutex);
+  taskQueue.push(task);
+  pthread_mutex_unlock(&taskQueueMutex);
+}
+
+void TaskQueue::enTaskQueue(Callback func, void *arg) {
+  pthread_mutex_lock(&taskQueueMutex);
+  Task task;
+  task.m_func = func;
+  task.m_arg = arg;
+  taskQueue.push(task);
+  pthread_mutex_unlock(&taskQueueMutex);
+}
+
+Task TaskQueue::deTaskQueue() {
+  Task t = taskQueue.front();
+
+  return t;
+}
+
+int TaskQueue::getSize() {
+  return 0;
+}
+
+int TaskQueue::getCapacity() {
+  return 0;
+}
+
+
+
