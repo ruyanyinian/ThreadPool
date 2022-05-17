@@ -68,6 +68,7 @@ ThreadPool::ThreadPool(int minThreads, int maxThreads) {
 }
 
 void *ThreadPool::worker(void *arg) {
+  ThreadPool *threadPool = reinterpret_cast<ThreadPool*>(arg);
 
   return nullptr;
 }
