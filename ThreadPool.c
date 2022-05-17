@@ -103,7 +103,7 @@ void *monitor(void *arg) {
   ThreadPool *threadPool = (ThreadPool*)arg;
 
   while (!threadPool->shutdown) {
-    sleep(1); // 每3s监控一次
+    sleep(1); // 每1s监控一次
     if (threadPool->livingNum < getSize(threadPool->taskQueue) &&
         threadPool->livingNum < threadPool->maxThreads) {
       pthread_mutex_lock(&threadPool->threadPoolMutex);
@@ -164,15 +164,15 @@ ThreadPool *createThreadPool(int maxThreads, int minThreads) {
 
     printf("the mutex or condition init failed \n");
   }
-
-  for (int i = 0; i < maxThreads; ++i) {
+  pthread_create(&threadPool->mid, NULL, monitor, threadPool);
+  for (int i = 0; i < minThreads; ++i) {
     /**
      * 一开始我在想为什么这里不是直接调用任务函数, 而是传递是以worker函数, 不仅仅自己的需求中分析的那样我们需要工作线程
      * 更是因为我们这里需要的是一个延迟的调用, 这里的worker更像是对真正线程函数的封装.
      * */
     pthread_create(&threadPool->tid[i], NULL, worker, threadPool); // 在这里我们直接启动了maxThreads的线程
   }
-  pthread_create(&threadPool->mid, NULL, monitor, threadPool);
+
   return threadPool;
 }
 
