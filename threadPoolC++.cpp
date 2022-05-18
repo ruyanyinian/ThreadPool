@@ -115,9 +115,9 @@ void *ThreadPool::monitor(void *arg) {
 }
 
 void ThreadPool::killThreads() {
-  pthread_t tid = pthread_self();
+  pthread_t curr_tid = pthread_self();
   for (int i = 0; i < maxThreads; ++i) {
-    if (this->tid[i] == tid) {
+    if (this->tid[i] == curr_tid) {
       std::cout << "start to kill thread: " << pthread_self() << std::endl;
       this->tid[i] = 0;
       break;
