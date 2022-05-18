@@ -9,6 +9,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <queue>
+#include <unistd.h>
 
 using namespace std;
 typedef void*(*TaskFunc)(void*);
@@ -36,7 +37,7 @@ public:
   std::size_t getSize();
 private:
   std::queue<Task> taskQueue;
-  pthread_mutex_t queueMutex;
+//  pthread_mutex_t queueMutex;
 };
 
 class ThreadPool {
@@ -48,12 +49,14 @@ public:
 public:
   static void *worker(void *);
   static void *monitor(void *);
-  void threadPoolAdd();
-
+  void threadPoolAdd(Task task);
+  void killThreads();
 private:
   pthread_t *tid, mid;
   pthread_cond_t notFull, notEmpty;
   bool shutdown;
   int killNums, maxThreads, minThreads, livingNums, workingNums;
+  TaskQueue *taskQueue;
+  pthread_mutex_t taskQueueMutex;
 };
 #endif //THREADPOOL_THREADPOOLC_H
